@@ -3,7 +3,6 @@ import string
 
 
 def clean_text(result):
-
     # Lists to store information
     foods = []
     quantities = []
@@ -12,10 +11,10 @@ def clean_text(result):
     # Iterate over the resulting entities and append the information
     for entity in result:
         if "FOOD" in entity["entity"]:
-            current_food = {"food": entity["word"], "food_start": entity["start"], "food_end": entity["end"]}
+            current_food = {"name": entity["word"], "name_start": entity["start"], "name_end": entity["end"]}
             foods.append(current_food)
         elif "QUANTITY" in entity["entity"]:
-            current_quantity = {"quantity": entity["word"], "quantity_start": entity["start"], "quantity_end": entity["end"]}
+            current_quantity = {"amount": entity["word"], "amount_start": entity["start"], "amount_end": entity["end"]}
             quantities.append(current_quantity)
         elif "UNIT" in entity["entity"]:
             current_unit = {"unit": entity["word"], "unit_start": entity["start"], "unit_end": entity["end"]}
@@ -28,10 +27,10 @@ def clean_text(result):
 
     # Check if DataFrames are empty, and create them if needed
     if df_food.empty:
-        df_food = pd.DataFrame(columns=["quantity", "quantity_start", "quantity_end"])
+        df_food = pd.DataFrame(columns=["amount", "amount_start", "amount_end"])
 
     if df_quantity.empty:
-        df_quantity = pd.DataFrame(columns=["quantity", "quantity_start", "quantity_end"])
+        df_quantity = pd.DataFrame(columns=["amount", "amount_start", "amount_end"])
 
     if df_unit.empty:
         df_unit = pd.DataFrame(columns=["unit", "unit_start", "unit_end"])
@@ -45,8 +44,8 @@ def clean_text(result):
 
     # Clean the text
     for i, rows in df_edited.iterrows():
-        df_edited.loc[i,'food'] = str(df_edited.loc[i,'food']).replace("▁"," ").strip().lower().capitalize()
-        df_edited.loc[i,'quantity'] = str(df_edited.loc[i,'quantity']).replace("▁"," ").strip().lower().capitalize()
+        df_edited.loc[i,'name'] = str(df_edited.loc[i,'name']).replace("▁"," ").strip().lower().capitalize()
+        df_edited.loc[i,'amount'] = str(df_edited.loc[i,'amount']).replace("▁"," ").strip().lower().capitalize()
         df_edited.loc[i,'unit'] = str(df_edited.loc[i,'unit']).replace("▁"," ").strip()
 
 
@@ -55,12 +54,12 @@ def clean_text(result):
     df_edited = df_edited.fillna(-1)
 
     # Change type for each columns
-    df_edited['food'] = df_edited['food'].astype(str)
-    df_edited['food_start'] = df_edited['food_start'].astype(int)
-    df_edited['food_end'] = df_edited['food_end'].astype(int)
+    df_edited['name'] = df_edited['name'].astype(str)
+    df_edited['name_start'] = df_edited['name_start'].astype(int)
+    df_edited['name_end'] = df_edited['name_end'].astype(int)
 
-    df_edited['quantity_start'] = df_edited['quantity_start'].astype(int)
-    df_edited['quantity_end'] = df_edited['quantity_end'].astype(int)
+    df_edited['amount_start'] = df_edited['amount_start'].astype(int)
+    df_edited['amount_end'] = df_edited['amount_end'].astype(int)
 
     df_edited['unit'] = df_edited['unit'].astype(str)
     df_edited['unit_start'] = df_edited['unit_start'].astype(int)
