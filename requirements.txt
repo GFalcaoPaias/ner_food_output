@@ -4,3 +4,4 @@ tensorflow
 tf-keras
 fastapi
 uvicorn
+nltk

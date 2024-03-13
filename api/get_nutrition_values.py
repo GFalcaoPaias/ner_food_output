@@ -1,39 +1,25 @@
 import streamlit as st
 import pandas as pd
 import difflib
-from difflib import SequenceMatcher
 import time
+from difflib import SequenceMatcher
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
 
 nutrition_dataset = pd.read_csv('data/nutrition_dataset.csv', delimiter=',')
-# nutrition_dataset = nutrition_dataset.sample(10000)
-
 food_names = nutrition_dataset['name'].dropna().tolist()
 
-def closest_matches(meal_name: str):
-    def similar(a, b):
-        return SequenceMatcher(None, a, b).ratio()
-
-    matches = difflib.get_close_matches(meal_name, food_names)
-
-    if len(matches) == 0:
-        return None
-
-    return [{ 'name': x, 'similarity': similar(x, meal_name) } for x in matches]
+match_columns = ['matched_name', 'matched_amount', 'matched_unit', 'matched_calories', 'matched_carbs', 'matched_protein', 'matched_fat']
 
 def get_nutrition_values(meals: pd.DataFrame) -> pd.DataFrame:
-    match_columns = ['matched_name', 'matched_amount', 'matched_unit', 'matched_calories', 'matched_carbs', 'matched_protein', 'matched_fat']
     meals[match_columns] = None
     time = current_milli_time()
 
     for index, row in meals.iterrows():
-        matches = closest_matches(row['name'])
-
-        if matches is None:
+        df_best_match = get_best_match_for_meal(row['name'])
+        if df_best_match is None:
             continue
-
-        # Find match in nutrition dataset
-        best_match = matches[0]
-        df_best_match = get_dataset_for_meal(best_match['name'], match_columns)
 
         meals.loc[index, match_columns] = df_best_match
 
@@ -54,6 +40,47 @@ def get_nutrition_values(meals: pd.DataFrame) -> pd.DataFrame:
     meals[float_columns] = meals[float_columns].astype(float)
 
     return meals
+
+cache = {}
+def get_best_match_for_meal(meal_name: str) -> pd.DataFrame:
+    meal_name = clean_text(meal_name)
+
+    if cache.get(meal_name) is not None:
+        return cache[meal_name]
+
+    matches = closest_matches(meal_name)
+
+    if matches is None:
+        return None
+
+    best_match = matches[0]
+    df_best_match = get_dataset_for_meal(best_match['name'], match_columns)
+
+    cache[meal_name] = df_best_match
+
+    return df_best_match
+
+stop_words = set(stopwords.words('english'))
+lemmatizer = WordNetLemmatizer()
+
+def clean_text(text):
+    text = text.strip()
+    text = text.lower()
+    tokens = word_tokenize(text)
+    tokens = [w for w in tokens if w not in stop_words]
+    tokens = [lemmatizer.lemmatize(word, pos = "n") for word in tokens]
+    return ' '.join(tokens)
+
+def closest_matches(meal_name: str):
+    def similar(a, b):
+        return SequenceMatcher(None, a, b).ratio()
+
+    matches = difflib.get_close_matches(meal_name, food_names)
+
+    if len(matches) == 0:
+        return None
+
+    return [{ 'name': x, 'similarity': similar(x, meal_name) } for x in matches]
 
 def get_dataset_for_meal(meal_name: str, match_columns: pd.DataFrame) -> pd.DataFrame:
     matched_nutrition_dataset = nutrition_dataset[nutrition_dataset['name'] == meal_name]
