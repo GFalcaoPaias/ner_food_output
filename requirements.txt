@@ -1,0 +1,6 @@
+pandas
+transformers
+tensorflow
+tf-keras
+fastapi
+uvicorn
