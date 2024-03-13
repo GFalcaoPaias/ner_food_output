@@ -6,6 +6,7 @@ RUN pip install -U pip
 RUN pip install -r requirements.txt
 
 COPY ner_model /ner_model
+COPY data /data
 COPY api /api
 
 
