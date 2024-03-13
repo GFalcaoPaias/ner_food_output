@@ -18,6 +18,7 @@ def get_nutrition_values(meals: pd.DataFrame) -> pd.DataFrame:
     for index, row in meals.iterrows():
         df_best_match = get_best_match_for_meal(row['name'])
         if df_best_match is None:
+            meals.drop(index, inplace=True)
             continue
 
         meals.loc[index, match_columns] = df_best_match
