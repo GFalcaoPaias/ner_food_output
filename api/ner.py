@@ -76,7 +76,7 @@ def clean_text(result):
 def ner_food_output(food_name):
 
     # Load the NER pipeline using a fine-tuned model for food entities
-    pipe = pipeline("ner", model="ner_model")
+    pipe = pipeline("ner", model="davanstrien/deberta-v3-base_fine_tuned_food_ner")
 
     # Get the NER results for the given food_name
     result = pipe(food_name)
@@ -84,24 +84,39 @@ def ner_food_output(food_name):
     # Filter entities with confidence score >= 0.3
     result = [entity for entity in result if entity['score'] >= 0.3]
 
+    # Iterate over the results to merge consecutive rows where is there a incorrect split
+    for i in range(len(result) - 1, 0, -1):
+        if result[i]['word'][0] != '▁' and result[i]['start'] == result[i-1]['end']:
+            # Append the main information
+            result[i - 1]["word"] += result[i]["word"]
+            result[i - 1]["entity"] = result[i]["entity"]
+            result[i - 1]["end"] = result[i]["end"]
+
+            # Delete the current row
+            del result[i]
+
     # Iterate over the results to merge consecutive rows with the same entity
     for i in range(len(result) - 1, 0, -1):
         current_entity = result[i]["entity"]
-        previous_entity = result[i - 1]["entity"].split('-')[1]
+        previous_entity = result[i - 1]["entity"]
 
         # Merge consecutive rows with the same entity
-        if current_entity.split('-')[1] == previous_entity:
+        if current_entity.split('-')[1] == previous_entity.split('-')[1]:
             if current_entity.split('-')[0] == "U":
                 None
             if current_entity.split('-')[0] == "I" or current_entity.split('-')[0] == "L":
-                # Append the word from the row below to the "word" column
-                result[i - 1]["word"] += result[i]["word"]
+                if i>1 and result[i - 1]["word"] == "▁and" and result[i - 2]["entity"].split('-')[0] == "U":
+                    # Delete the current row
+                    del result[i-1]
+                elif previous_entity.split('-')[0] == "B" or previous_entity.split('-')[0] == "I" or previous_entity.split('-')[0] == "L":
+                    # Append the word from the row below to the "word" column
+                    result[i - 1]["word"] += result[i]["word"]
 
-                # Update the "end" value of the first row with the "end" value of the row below
-                result[i - 1]["end"] = result[i]["end"]
+                    # Update the "end" value of the first row with the "end" value of the row below
+                    result[i - 1]["end"] = result[i]["end"]
 
-                # Delete the current row
-                del result[i]
+                    # Delete the current row
+                    del result[i]
 
     # Identify sentence boundaries based on start and end indices
     sentences=[]
