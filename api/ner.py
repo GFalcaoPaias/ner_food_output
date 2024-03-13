@@ -1,6 +1,5 @@
 import pandas as pd
 import string
-from transformers import pipeline
 
 
 def clean_text(result):
@@ -73,10 +72,8 @@ def clean_text(result):
     return df_edited
 
 
-def ner_food_output(food_name):
+def ner_food_output(food_name, pipe):
 
-    # Load the NER pipeline using a fine-tuned model for food entities
-    pipe = pipeline("ner", model="davanstrien/deberta-v3-base_fine_tuned_food_ner")
 
     # Get the NER results for the given food_name
     result = pipe(food_name)
