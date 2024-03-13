@@ -21,18 +21,14 @@ match_columns = ['matched_calories', 'matched_carbs', 'matched_protein', 'matche
 
 def get_nutrition_values(meals: pd.DataFrame) -> pd.DataFrame:
     meals[match_columns] = None
-    time = current_milli_time()
 
     for index, row in meals.iterrows():
-        print(row)
         df_best_match = get_calories_for_meal(row['amount'], row['unit'], row['name'])
         if df_best_match is None:
             meals.drop(index, inplace=True)
             continue
 
         meals.loc[index, match_columns] = df_best_match
-
-    print("TIME TO FIND ALL IN DATASET", current_milli_time() - time)
 
     float_columns = [
         'name_start',
@@ -47,19 +43,25 @@ def get_nutrition_values(meals: pd.DataFrame) -> pd.DataFrame:
 
     return meals
 
-cache = {}
 def get_calories_for_meal(amount: float, unit: str, meal_name: str) -> pd.Series:
-    amount = np.float64(amount) if amount.isdigit() else 1
-
     meal_name = clean_text(meal_name)
     if len(meal_name) == 0:
         return None
+
+    # if meal_name in cache:
+    #     print("RETURNING FROM CACHE")
+    #     return cache[meal_name]
+    # else:
+    #     print("NOT FOUND IN CACHE", meal_name, cache.keys())
+
+    # Extraction also returns amount like "a", "some", etc.
+    amount = np.float64(amount) if amount.isdigit() else 1
 
     calories = fats = carbohydrates = proteins = None
     found = False
     base_unit = get_base_unit(unit)
     if base_unit is None:
-        matches = closest_matches(meal_name, food_names_portion_level)
+        matches = closest_matches(meal_name, portion_level=True)
         matches_df = df_portion_level[df_portion_level['name'].isin(matches)]
         calories_per_portion = matches_df['calories_per_portion'].median()
 
@@ -75,11 +77,10 @@ def get_calories_for_meal(amount: float, unit: str, meal_name: str) -> pd.Series
             base_unit = get_base_unit("g")
         else:
             found = True
-    #import ipdb; ipdb.set_trace()
 
     if not found:
         amount_grams = get_base_amount_in_grams(amount, base_unit)
-        matches = closest_matches(meal_name, food_names_gram_level)
+        matches = closest_matches(meal_name, portion_level=False)
         matches_df = df_gram_level[df_gram_level['name'].isin(matches)]
         calories_per_gram = matches_df['calories_per_gram'].median()
         calories = amount_grams * calories_per_gram
@@ -91,11 +92,9 @@ def get_calories_for_meal(amount: float, unit: str, meal_name: str) -> pd.Series
         if calories:
             found = True
 
-    cache[meal_name] = pd.Series(
+    return pd.Series(
         [calories, fats, carbohydrates, proteins],
         index=match_columns) if found else None
-
-    return cache[meal_name]
 
 def get_base_unit(unit: str) -> str:
     base_unit_mappings = {
@@ -624,11 +623,23 @@ def get_base_amount_in_grams(amount: float, base_unit: str) -> float:
 
     return amount * to_gram_factors.get(base_unit)
 
-def closest_matches(meal_name: str, food_names=[]) -> list:
-    matches = difflib.get_close_matches(meal_name, food_names, n=50, cutoff=0.6)
+cache = {
+    'portion_level': {},
+    'gram_level': {}
+}
+def closest_matches(meal_name: str, portion_level: bool) -> list:
+    cache_key = 'portion_level' if portion_level else 'gram_level'
+    if meal_name in cache[cache_key]:
+        return cache[cache_key][meal_name]
 
-    if len(matches) == 0:
-        return []
+    food_names = food_names_portion_level if portion_level else food_names_gram_level
+
+    time = current_milli_time()
+    matches = difflib.get_close_matches(meal_name, food_names, n=50, cutoff=0.6)
+    print("TIME TO FIND ALL IN DATASET", current_milli_time() - time)
+
+    cache_key = 'portion_level' if portion_level else 'gram_level'
+    cache[cache_key][meal_name] = matches
 
     return matches
 
