@@ -2,7 +2,7 @@ import pandas as pd
 import string
 
 
-def clean_text(result):
+def concat_meals(result):
     # Lists to store information
     foods = []
     quantities = []
@@ -150,7 +150,7 @@ def ner_food_output(food_name, pipe):
         a = a.loc[i+1:].reset_index(drop=True)
 
     # Concatenate cleaned text output (function used) for each sentence
-    result = pd.concat([clean_text(o) for o in output])
+    result = pd.concat([concat_meals(o) for o in output])
 
     result.reset_index(drop=True, inplace=True)
 
