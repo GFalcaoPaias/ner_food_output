@@ -55,7 +55,7 @@ def get_calories_for_meal(amount: float, unit: str, meal_name: str) -> pd.Series
     #     print("NOT FOUND IN CACHE", meal_name, cache.keys())
 
     # Extraction also returns amount like "a", "some", etc.
-    amount = np.float64(amount) if amount.isdigit() else 1
+    amount = get_numeric_amount(amount)
 
     calories = fats = carbohydrates = proteins = None
     found = False
@@ -96,6 +96,34 @@ def get_calories_for_meal(amount: float, unit: str, meal_name: str) -> pd.Series
         [calories, fats, carbohydrates, proteins],
         index=match_columns) if found else None
 
+number_identifiers = {
+    0.5: ['half', 'halve', 'halved', 'middle', 'midway', 'part'],
+    1: ['a', 'one', 'an', 'the'],
+    2: ['two', 'couple', 'pair', 'double', 'twice', 'both'],
+    3: ['three', 'triple', 'trio', 'thrice', 'some'],
+    4: ['four'],
+    5: ['five', 'few'],
+    6: ['six'],
+    7: ['seven', 'several'],
+    8: ['eight'],
+    9: ['nine'],
+    10: ['ten', 'dozen']
+}
+
+# TODO: Use machine learning to identify the amount
+def get_numeric_amount(amount):
+    amount = amount.lower().strip()
+
+    if amount.isdigit():
+        return np.float64(amount)
+
+    for number, identifiers in number_identifiers.items():
+        if amount in identifiers:
+            return number
+
+    return 1
+
+# TODO: Use machine learning to identify the base unit
 def get_base_unit(unit: str) -> str:
     base_unit_mappings = {
         'cc': 'cl',
