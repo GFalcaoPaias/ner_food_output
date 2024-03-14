@@ -113,6 +113,9 @@ def ner_food_output(food_name, pipe):
 
                     # Delete the current row
                     del result[i]
+                else:
+                    # Delete the current row
+                    del result[i]
 
     # Identify sentence boundaries based on start and end indices
     sentences=[]
