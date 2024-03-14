@@ -73,7 +73,6 @@ def concat_meals(result):
 
 def ner_food_output(food_name, pipe):
 
-
     # Get the NER results for the given food_name
     result = pipe(food_name)
 
@@ -92,6 +91,7 @@ def ner_food_output(food_name, pipe):
             del result[i]
 
     # Iterate over the results to merge consecutive rows with the same entity
+
     for i in range(len(result) - 1, 0, -1):
         current_entity = result[i]["entity"]
         previous_entity = result[i - 1]["entity"]
@@ -149,6 +149,8 @@ def ner_food_output(food_name, pipe):
 
     # Concatenate cleaned text output (function used) for each sentence
     result = pd.concat([concat_meals(o) for o in output])
+
+
 
     result.reset_index(drop=True, inplace=True)
 
