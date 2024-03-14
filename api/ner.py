@@ -98,22 +98,20 @@ def ner_food_output(food_name, pipe):
 
         # Merge consecutive rows with the same entity
         if current_entity.split('-')[1] == previous_entity.split('-')[1]:
-            if current_entity.split('-')[0] == "U":
-                None
-            if current_entity.split('-')[0] == "I" or current_entity.split('-')[0] == "L":
-                if i>1 and result[i - 1]["word"] == "▁and" and result[i - 2]["entity"].split('-')[0] == "U":
-                    # Delete the current row
-                    del result[i-1]
-                elif previous_entity.split('-')[0] == "B" or previous_entity.split('-')[0] == "I" or previous_entity.split('-')[0] == "L":
+            if i>1 and result[i - 1]["entity"].split('-')[0] == "I" and result[i - 2]["entity"].split('-')[0] == "U":
+                # Delete the current row
+                del result[i-1]
+            elif current_entity.split('-')[0] == "I" or current_entity.split('-')[0] == "L":
+                if previous_entity.split('-')[0] == "B" or previous_entity.split('-')[0] == "I" or previous_entity.split('-')[0] == "L":
                     # Append the word from the row below to the "word" column
                     result[i - 1]["word"] += result[i]["word"]
 
                     # Update the "end" value of the first row with the "end" value of the row below
                     result[i - 1]["end"] = result[i]["end"]
 
-                    # Delete the current row
-                    del result[i]
-                else:
+                    if previous_entity.split('-')[0] == "I":
+                        result[i - 1]["entity"] = result[i]["entity"]
+
                     # Delete the current row
                     del result[i]
 
