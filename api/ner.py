@@ -27,7 +27,7 @@ def concat_meals(result):
 
     # Check if DataFrames are empty, and create them if needed
     if df_food.empty:
-        df_food = pd.DataFrame(columns=["amount", "amount_start", "amount_end"])
+        return pd.DataFrame()
 
     if df_quantity.empty:
         df_quantity = pd.DataFrame(columns=["amount", "amount_start", "amount_end"])
