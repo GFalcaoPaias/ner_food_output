@@ -17,7 +17,7 @@ df_gram_level = df[~df['calories_per_gram'].isna()]
 food_names_portion_level = df_portion_level['name'].tolist()
 food_names_gram_level = df_gram_level['name'].tolist()
 
-match_columns = ['matched_calories', 'matched_carbs', 'matched_protein', 'matched_fat']
+match_columns = ['matched_calories', 'matched_fat', 'matched_carbs', 'matched_protein']
 
 def get_nutrition_values(meals: pd.DataFrame) -> pd.DataFrame:
     meals[match_columns] = None
@@ -64,17 +64,22 @@ def get_calories_for_meal(amount_str: str, unit: str, meal_name: str) -> pd.Seri
     calories = fats = carbohydrates = proteins = None
     found = False
     base_unit = get_base_unit(unit)
+
+    # Try to calculate on portion level
     if base_unit is None:
         matches = closest_matches(meal_name, portion_level=True)
         matches_df = df_portion_level[df_portion_level['name'].isin(matches)]
-        calories_per_portion = matches_df['calories_per_portion'].median()
-
-        calories = amount * calories_per_portion
-
-        ratio = calories_per_portion / matches_df['calories'].median()
-        fats = amount * matches_df['fats'].median() * ratio
-        carbohydrates = amount * matches_df['carbohydrates'].median() * ratio
-        proteins = amount * matches_df['proteins'].median() * ratio
+        calories_per_portion_median = matches_df['calories_per_portion'].median()
+        #import ipdb; ipdb.set_trace()
+        # Find the match with that median value
+        best_matches = matches_df.iloc[(matches_df['amount'] - calories_per_portion_median).abs().argsort()[:2]]
+        print("--------------------")
+        print("MEAL", meal_name)
+        print(best_matches[['name','calories','fats','carbohydrates','proteins', 'calories_per_portion']])
+        calories = best_matches['calories'].mean() * amount
+        fats = best_matches['fats'].mean() * amount
+        carbohydrates = best_matches['carbohydrates'].mean() * amount
+        proteins = best_matches['proteins'].mean() * amount
 
         # Plausability check. Bigger than 2000ccal might be due to a misinterpretation and we try to treat the unit as grams instead
         if calories > 2000:
@@ -87,12 +92,20 @@ def get_calories_for_meal(amount_str: str, unit: str, meal_name: str) -> pd.Seri
         amount_grams = get_base_amount_in_grams(amount, base_unit)
         matches = closest_matches(meal_name, portion_level=False)
         matches_df = df_gram_level[df_gram_level['name'].isin(matches)]
-        calories_per_gram = matches_df['calories_per_gram'].median()
+        calories_per_gram_median = matches_df['calories_per_gram'].median()
+
+        best_matches = matches_df.iloc[(matches_df['amount'] - calories_per_gram_median).abs().argsort()[:2]]
+        print("--------------------")
+        print("MEAL", meal_name, amount_grams)
+        print(best_matches[['name','calories','fats','carbohydrates','proteins', 'calories_per_gram']])
+
+        calories_per_gram = best_matches['calories_per_gram'].mean()
         calories = amount_grams * calories_per_gram
 
-        fats = amount * matches_df['fats'].median() / calories_per_gram
-        carbohydrates = amount * matches_df['carbohydrates'].median() / calories_per_gram
-        proteins = amount * matches_df['proteins'].median() / calories_per_gram
+        original_calories_mean = best_matches['calories'].mean()
+        fats = calories * ((best_matches['fats'].mean() * 9) / original_calories_mean) / 9
+        carbohydrates = calories * ((best_matches['carbohydrates'].mean() * 4) / original_calories_mean) / 4
+        proteins = calories * ((best_matches['proteins'].mean() * 4) / original_calories_mean) / 4
 
         if calories:
             found = True
