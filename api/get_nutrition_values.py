@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import difflib
 import time
-from difflib import SequenceMatcher
+import re
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
@@ -48,11 +48,13 @@ def get_calories_for_meal(amount: float, unit: str, meal_name: str) -> pd.Series
     if len(meal_name) == 0:
         return None
 
-    # if meal_name in cache:
-    #     print("RETURNING FROM CACHE")
-    #     return cache[meal_name]
-    # else:
-    #     print("NOT FOUND IN CACHE", meal_name, cache.keys())
+    if amount == -1 and unit:
+        float("0" + "".join(re.findall(r'[\d.,]', "200,5g")).replace(',', '.'))
+    if meal_name in cache:
+        print("RETURNING FROM CACHE")
+        return cache[meal_name]
+    else:
+        print("NOT FOUND IN CACHE", meal_name, cache.keys())
 
     # Extraction also returns amount like "a", "some", etc.
     amount = get_numeric_amount(amount)
@@ -78,6 +80,7 @@ def get_calories_for_meal(amount: float, unit: str, meal_name: str) -> pd.Series
         else:
             found = True
 
+    # If no result yet, we try to calculate on gram level
     if not found:
         amount_grams = get_base_amount_in_grams(amount, base_unit)
         matches = closest_matches(meal_name, portion_level=False)
@@ -97,7 +100,11 @@ def get_calories_for_meal(amount: float, unit: str, meal_name: str) -> pd.Series
         index=match_columns) if found else None
 
 number_identifiers = {
-    0.5: ['half', 'halve', 'halved', 'middle', 'midway', 'part'],
+    0.125: ['1/8', 'eighth'],
+    0.2: ['1/5', 'fifth'],
+    0.33: ['1/3', 'third'],
+    0.25: ['1/4', 'quarter', 'fourth'],
+    0.5: ['1/2', 'half', 'halve', 'halved', 'middle', 'midway', 'part'],
     1: ['a', 'one', 'an', 'the'],
     2: ['two', 'couple', 'pair', 'double', 'twice', 'both'],
     3: ['three', 'triple', 'trio', 'thrice', 'some'],
@@ -648,6 +655,7 @@ def get_base_amount_in_grams(amount: float, base_unit: str) -> float:
         'cl': 10,
         'ml': 1,
     }
+    print("BASE", base_unit, to_gram_factors.get(base_unit))
 
     return amount * to_gram_factors.get(base_unit)
 
