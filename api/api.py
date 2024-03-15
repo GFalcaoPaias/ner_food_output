@@ -22,10 +22,15 @@ pipe = pipeline("ner", model="davanstrien/deberta-v3-base_fine_tuned_food_ner")
 @app.get('/')
 def food(text):
 
+    text = text.replace('breakfast', '         ')
+    text = text.replace('lunch', '    ')
+    text = text.replace('dinner', '     ')
+    text = text.replace('\n', '  ')
+
     output = ner_food_output(text, pipe)
     nutrition_values = get_nutrition_values(output)
 
-    # Increase all indices by 2 for every new line before
+    # TODO: Increase all indices by 2 for every new line before
     # float_columns = [
     #     'name_start',
     #     'name_end',
