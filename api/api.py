@@ -25,7 +25,6 @@ def food(text):
     text = text.replace('breakfast', '         ')
     text = text.replace('lunch', '    ')
     text = text.replace('dinner', '     ')
-    text = text.replace('\n', '  ')
 
     output = ner_food_output(text, pipe)
     nutrition_values = get_nutrition_values(output)
@@ -46,8 +45,3 @@ def food(text):
 
     print(nutrition_values)
     return {col: nutrition_values[col].to_list() for col in nutrition_values.columns}
-
-# Just a simple endpoint to identify, whether slow execution times are due to the network
-@app.get("/ping")
-def root():
-    return "pong"
