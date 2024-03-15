@@ -41,7 +41,17 @@ def get_nutrition_values(meals: pd.DataFrame) -> pd.DataFrame:
 
     meals[float_columns] = meals[float_columns].astype(float)
 
+    # Scale fats/carbs/proteins to fit to calories, cause due to rounding errors in the dataset, calories and macros drift apart
+    fit_macros_to_calories(meals)
+
     return meals
+
+def fit_macros_to_calories(meals):
+    calculated_calories = meals['matched_fat'].sum() * 9 + meals['matched_carbs'].sum() * 4 + meals['matched_protein'].sum() * 4
+    ratio = meals['matched_calories'].sum() / calculated_calories
+    meals['matched_fat'] = meals['matched_fat'] * ratio
+    meals['matched_carbs'] = meals['matched_carbs'] * ratio
+    meals['matched_protein'] = meals['matched_protein'] * ratio
 
 def get_calories_for_meal(amount_str: str, unit: str, meal_name: str) -> pd.Series:
     meal_name = clean_text(meal_name)
@@ -73,9 +83,7 @@ def get_calories_for_meal(amount_str: str, unit: str, meal_name: str) -> pd.Seri
         #import ipdb; ipdb.set_trace()
         # Find the match with that median value
         best_matches = matches_df.iloc[(matches_df['amount'] - calories_per_portion_median).abs().argsort()[:2]]
-        print("--------------------")
-        print("MEAL", meal_name)
-        print(best_matches[['name','calories','fats','carbohydrates','proteins', 'calories_per_portion']])
+
         calories = best_matches['calories'].mean() * amount
         fats = best_matches['fats'].mean() * amount
         carbohydrates = best_matches['carbohydrates'].mean() * amount
@@ -95,9 +103,6 @@ def get_calories_for_meal(amount_str: str, unit: str, meal_name: str) -> pd.Seri
         calories_per_gram_median = matches_df['calories_per_gram'].median()
 
         best_matches = matches_df.iloc[(matches_df['amount'] - calories_per_gram_median).abs().argsort()[:2]]
-        print("--------------------")
-        print("MEAL", meal_name, amount_grams)
-        print(best_matches[['name','calories','fats','carbohydrates','proteins', 'calories_per_gram']])
 
         calories_per_gram = best_matches['calories_per_gram'].mean()
         calories = amount_grams * calories_per_gram
@@ -670,7 +675,6 @@ def get_base_amount_in_grams(amount: float, base_unit: str) -> float:
         'cl': 10,
         'ml': 1,
     }
-    print("BASE", base_unit, to_gram_factors.get(base_unit))
 
     return amount * to_gram_factors.get(base_unit)
 
