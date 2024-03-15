@@ -25,6 +25,21 @@ def food(text):
     output = ner_food_output(text, pipe)
     nutrition_values = get_nutrition_values(output)
 
+    # Increase all indices by 2 for every new line before
+    # float_columns = [
+    #     'name_start',
+    #     'name_end',
+    #     'unit_start',
+    #     'unit_end',
+    #     'amount_start',
+    #     'amount_end']
+
+    # for key in nutrition_values:
+    #     nutrition_values[key] = [i + 2 for i in nutrition_values[key]]
+
+    nutrition_values.dropna(inplace=True)
+
+    print(nutrition_values)
     return {col: nutrition_values[col].to_list() for col in nutrition_values.columns}
 
 # Just a simple endpoint to identify, whether slow execution times are due to the network
