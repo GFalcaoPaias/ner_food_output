@@ -43,13 +43,11 @@ def get_nutrition_values(meals: pd.DataFrame) -> pd.DataFrame:
 
     return meals
 
-def get_calories_for_meal(amount: float, unit: str, meal_name: str) -> pd.Series:
+def get_calories_for_meal(amount_str: str, unit: str, meal_name: str) -> pd.Series:
     meal_name = clean_text(meal_name)
     if len(meal_name) == 0:
         return None
 
-    if amount == -1 and unit:
-        float("0" + "".join(re.findall(r'[\d.,]', "200,5g")).replace(',', '.'))
     if meal_name in cache:
         print("RETURNING FROM CACHE")
         return cache[meal_name]
@@ -57,7 +55,11 @@ def get_calories_for_meal(amount: float, unit: str, meal_name: str) -> pd.Series
         print("NOT FOUND IN CACHE", meal_name, cache.keys())
 
     # Extraction also returns amount like "a", "some", etc.
-    amount = get_numeric_amount(amount)
+    amount = get_numeric_amount(amount_str)
+
+    if str(amount_str) == str(-1) and unit:
+        amount = float("0" + "".join(re.findall(r'[\d.,]', unit)).replace(',', '.'))
+        unit = re.sub(r'[\d.,]', '', unit)
 
     calories = fats = carbohydrates = proteins = None
     found = False

@@ -22,6 +22,8 @@ pipe = pipeline("ner", model="davanstrien/deberta-v3-base_fine_tuned_food_ner")
 @app.get('/')
 def food(text):
 
+    # Replacing some buzzwords that should not be detected as food
+    text = text.lower()
     text = text.replace('breakfast', '         ')
     text = text.replace('lunch', '    ')
     text = text.replace('dinner', '     ')
